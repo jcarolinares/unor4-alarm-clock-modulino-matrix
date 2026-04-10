@@ -64,7 +64,7 @@ RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLigh
 
 // Alarm time & Variables
 RTCTime alarmTime(7, Month::APRIL, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
-bool alarm_status = true;
+bool alarm_status = false;
 
 // State Machines Variables
 int state = 3;
@@ -130,7 +130,7 @@ void loop() {
   // Initial press entering menu mode
   if (click == true && state != 0){ // Knob click enters Menu mode // FIXME after clock set or alarm sets it enters direcly on the menu, should not work that way
     state = 3; // TODO should be 0 but I enter alarm mode until this menu is finished 
-    delay(500); // To avoid to skips because of the previous knob click
+    delay(760); // To avoid to skips because of the previous knob click
   }
 
 
@@ -329,6 +329,7 @@ void set_alarm(){
 
   Serial.println("Minutes Set");
   buzzer.tone(frequency, duration);
+  alarm_status = true;
 }
 
 //---------------------- MATRIX FRAMES FUNCTIONS -----------------//
