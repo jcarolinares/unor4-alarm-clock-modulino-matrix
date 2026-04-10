@@ -23,12 +23,14 @@
 // Wifi Libraries
 #include <WiFiS3.h>
 #include <WiFiUdp.h>
-// #include "arduino_secrets.h" 
+#include "arduino_secrets.h" 
 
-// Wifi and NTP Objects
+// NTP Settings
+// Offset is in seconds: e.g., UTC+1 = 3600, UTC-5 = -18000
 int wifiStatus = WL_IDLE_STATUS;
 WiFiUDP Udp; // A UDP instance to let us send and receive packets over UDP
 NTPClient timeClient(Udp);
+
 
 // Modulino Matrix Objects
 ModulinoLEDMatrix matrix_0;
@@ -63,8 +65,11 @@ int minutes = 0;
 RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 
 // Alarm time & Variables
-RTCTime alarmTime(7, Month::APRIL, 2026, 17, 30, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+RTCTime alarmTime(7, Month::APRIL, 2026, 8, 15, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = true;
+
+// State Machines Variables
+int state = 0;
 
 void setup() {
 
@@ -85,25 +90,62 @@ void setup() {
   // Integrated Matrix
   integrated_matrix.begin();
 
+  connectToWiFi();
+  RTC.begin();
+  Serial.println("\nStarting connection to server...");
+  timeClient.begin();
+  timeClient.update();
+
+  // Get the current date and time from an NTP server and convert
+  // it to UTC +2 by passing the time zone offset in hours.
+  // You may change the time zone offset to your local one.
+  auto timeZoneOffsetHours = 2;
+  auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
+  Serial.print("Unix time = ");
+  Serial.println(unixTime);
+  RTCTime timeToSet = RTCTime(unixTime);
+  RTC.setTime(timeToSet);
+
+  // Retrieve the date and time from the RTC and print them
+  RTCTime currentTime;
+  RTC.getTime(currentTime); 
+  Serial.println("The RTC was just set to: " + String(currentTime));
+
+
+
   // Time and Date Init Setup
-  currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE);
+  // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE);
   RTC.setTime(currentTime);
   matrix_show_time();
 
-  // integrated_matrix_date();
-  set_time();
+  integrated_matrix_date();
+
+  // set_time(); // Manual time set
   
 }
 
 void loop() {
 
-  // Get current time from RTC
-  RTC.getTime(currentTime);
+  // Transitions of the State Machine
+  // TODO
 
-  matrix_show_time();
-  integrated_matrix_date();
-  check_alarm();
-  delay(10000); // FIXME change this for a millis thing
+  // State Machine
+  switch(state){
+    case 0: // Clock Mode
+      // Get current time from RTC
+      RTC.getTime(currentTime);
+
+      matrix_show_time();
+      integrated_matrix_date();
+      check_alarm();
+      delay(10000); // FIXME change this for a millis thing
+    break;
+
+    case 1: // Manual Time Set
+      set_time();
+      state =0;
+    break;
+  }
 
 }
 
@@ -363,10 +405,55 @@ void set_time(){
 }
 
 
+//---------------------- WIFI & NTP FUNCTIONS -----------------//
+void printWifiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your board's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
+void connectToWiFi(){
+  // check for the WiFi module:
+  if (WiFi.status() == WL_NO_MODULE) {
+    Serial.println("Communication with WiFi module failed!");
+    // don't continue
+    while (true);
+  }
+
+  String fv = WiFi.firmwareVersion();
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.println("Please upgrade the firmware");
+  }
+
+  // attempt to connect to WiFi network:
+  while (wifiStatus != WL_CONNECTED) {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+    wifiStatus = WiFi.begin(ssid, pass);
+
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+
+  Serial.println("Connected to WiFi");
+  printWifiStatus();
+}
 
 
 
-//---------------------- DEBUGGING FUNCTIONS -----------------
+//---------------------- DEBUGGING FUNCTIONS -----------------//
 
 void numbers_demo_mode()
 {
