@@ -56,16 +56,14 @@ int duration = 100;  // Duration of the tone in milliseconds
 
 
 // RTC Variables
-// RTCTime currentTime;
 int hours = 0;
 int minutes = 0;
-// DayOfWeek day_of_week = DayOfWeek::THURSDAY;
 
 // Initial time
 RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 
 // Alarm time & Variables
-RTCTime alarmTime(7, Month::APRIL, 2026, 8, 15, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+RTCTime alarmTime(7, Month::APRIL, 2026, 12, 01, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = true;
 
 // State Machines Variables
@@ -81,47 +79,43 @@ void setup() {
   knob.begin();
   buzzer.begin();
 
-  // Matrix_ Init Setup
+  // Matrix Init Setup
   matrix_0.begin();
   matrix_1.begin();
   matrix_2.begin();
   matrix_3.begin();
 
-  // Integrated Matrix
+  // Integrated Matrix Init Setup
   integrated_matrix.begin();
 
+  // Wifi Init Setup
   connectToWiFi();
-  RTC.begin();
   Serial.println("\nStarting connection to server...");
   timeClient.begin();
   timeClient.update();
 
-  // Get the current date and time from an NTP server and convert
-  // it to UTC +2 by passing the time zone offset in hours.
-  // You may change the time zone offset to your local one.
-  auto timeZoneOffsetHours = 2;
+  // RTC, NTP and Timezone Init Setup
+  auto timeZoneOffsetHours = 2; // Time zone offset
   auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
   Serial.print("Unix time = ");
   Serial.println(unixTime);
   RTCTime timeToSet = RTCTime(unixTime);
   RTC.setTime(timeToSet);
 
-  // Retrieve the date and time from the RTC and print them
+  // Final RTC Timezone Configured
   RTCTime currentTime;
   RTC.getTime(currentTime); 
   Serial.println("The RTC was just set to: " + String(currentTime));
 
 
-
   // Time and Date Init Setup
-  // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE);
+  // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE); // Debugging Manual Overiding
   RTC.setTime(currentTime);
+  
+  // Initial Matrixes frames
   matrix_show_time();
-
   integrated_matrix_date();
 
-  // set_time(); // Manual time set
-  
 }
 
 void loop() {
@@ -150,9 +144,100 @@ void loop() {
 }
 
 
+
+// Check the Alarm time and triggered it when is the right time
+void check_alarm(){
+  int current_hour = currentTime.getHour();
+  int alarm_hour = alarmTime.getHour();
+  int current_minutes = currentTime.getMinutes();
+  int alarm_minutes = alarmTime.getMinutes();
+
+  // Alarm is ON
+  if (alarm_status == true && current_hour == alarm_hour && current_minutes == alarm_minutes ){
+    for(int i = 0; i<20; i++){
+      buzzer.tone(494, 500);
+      delay(250);
+      buzzer.tone(0, 500);
+      delay(250);
+    }
+    alarm_status = false;
+  }
+}
+
+
+//---------------------- MENU FUNCTIONS -----------------//
+
+// Manually set time using the Modulino Knob
+void set_time(){
+
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  // Hours tens
+  while(click == 0)
+  {
+    integrated_matrix.loadFrame(icon_HOUR);
+    // Serial.println(hours);
+    if (direction == 1 && hours < 24){
+      buzzer.tone(330, duration);
+      hours++;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      matrix_show_time();
+    }
+    else if(direction == -1 && hours > 0){
+      hours--;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      matrix_show_time();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Hours Set");
+  delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
+
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  while(click == 0)
+  {
+    integrated_matrix.loadFrame(icon_MIN);
+    // Serial.println(minutes);
+    if (direction == 1 && minutes < 60){
+      buzzer.tone(330, duration);
+      minutes++;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      matrix_show_time();
+    }
+    else if(direction == -1 && minutes > 0){
+      minutes--;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      matrix_show_time();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Minutes Set");
+  buzzer.tone(frequency, duration);
+}
+
+
+//---------------------- MATRIX FRAMES FUNCTIONS -----------------//
+
+// Shows on the R4 Integrated Matrix the Date of the Day
 void integrated_matrix_date()
 {
-
   DayOfWeek day_of_week = currentTime.getDayOfWeek();
   if(day_of_week == DayOfWeek::MONDAY){
     integrated_matrix.loadFrame(frame_MON);
@@ -178,27 +263,9 @@ void integrated_matrix_date()
   delay(100);
 }
 
-void check_alarm(){
-  int current_hour = currentTime.getHour();
-  int alarm_hour = alarmTime.getHour();
-  int current_minutes = currentTime.getMinutes();
-  int alarm_minutes = alarmTime.getMinutes();
-
-  // Alarm is ON
-  if (alarm_status == true && current_hour == alarm_hour && current_minutes == alarm_minutes ){
-    for(int i = 0; i<20; i++){
-      buzzer.tone(494, 500);
-      delay(250);
-      buzzer.tone(0, 500);
-      delay(250);
-    }
-    alarm_status = false;
-  }
-}
-
+// Shows the time on each Modulino's Matrix
 void matrix_show_time()
 {
-
   int hour_tens = currentTime.getHour()/10;
   int hour_units = currentTime.getHour()%10;
   int minutes_tens = currentTime.getMinutes()/10;
@@ -335,94 +402,12 @@ void matrix_show_time()
       matrix_0.setFrame(SEG_NUM_9);
       break;
   }
-
-}
-
-
-void set_time(){
-
-  position = knob.get();
-  click = knob.isPressed();
-  direction = knob.getDirection();
-
-  // Hours tens
-  while(click == 0)
-  {
-    integrated_matrix.loadFrame(icon_HOUR);
-    // Serial.println(hours);
-    if (direction == 1 && hours < 24){
-      buzzer.tone(330, duration);
-      hours++;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
-      RTC.setTime(currentTime);
-      matrix_show_time();
-    }
-    else if(direction == -1 && hours > 0){
-      hours--;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
-      RTC.setTime(currentTime);
-      matrix_show_time();
-    }
-
-    position = knob.get();
-    click = knob.isPressed();
-    direction = knob.getDirection();
-  }
-
-  // Serial.println("Hours Set");
-  delay(1000); // Delay to avoid the detection of the previous click of the Knob
-
-  position = knob.get();
-  click = knob.isPressed();
-  direction = knob.getDirection();
-
-  while(click == 0)
-  {
-    integrated_matrix.loadFrame(icon_MIN);
-    // Serial.println(minutes);
-    if (direction == 1 && minutes < 60){
-      buzzer.tone(330, duration);
-      minutes++;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
-      RTC.setTime(currentTime);
-      matrix_show_time();
-    }
-    else if(direction == -1 && minutes > 0){
-      minutes--;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
-      RTC.setTime(currentTime);
-      matrix_show_time();
-    }
-
-    position = knob.get();
-    click = knob.isPressed();
-    direction = knob.getDirection();
-  }
-
-  // Serial.println("Minutes Set");
-  buzzer.tone(frequency, duration);
-
 }
 
 
 //---------------------- WIFI & NTP FUNCTIONS -----------------//
-void printWifiStatus() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
 
-  // print your board's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-}
-
+// Manages the Wifi connection
 void connectToWiFi(){
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
@@ -455,6 +440,25 @@ void connectToWiFi(){
 
 //---------------------- DEBUGGING FUNCTIONS -----------------//
 
+// Shows on the serial the status of the Wifi connection
+void printWifiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your board's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
+// Shows all the available number frames on each Modulino's Matrix
 void numbers_demo_mode()
 {
   // Numbers Demo Mode - Small Numbers
@@ -544,6 +548,7 @@ void numbers_demo_mode()
   delay(500);
 }
 
+// Shows the days of the week frames on the R4 Matrix
 void dates_demo_mode()
 {
   integrated_matrix.loadFrame(frame_MON);
@@ -568,6 +573,7 @@ void dates_demo_mode()
   delay(1000);
 }
 
+// Shows on serial the actual current time to debug problems with the clock
 void debug_time()
 {
   // Print out date (DD/MM//YYYY)
