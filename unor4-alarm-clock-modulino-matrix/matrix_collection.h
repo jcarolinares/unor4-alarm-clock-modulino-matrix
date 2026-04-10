@@ -6,6 +6,23 @@ const uint32_t heart[] = {
     0x100a0040
 };
 
+constexpr uint32_t icon_ALARM_SET[] = {
+  0x0600f01f,
+  0x81f81f81,
+  0xf83fc060
+};
+
+constexpr uint32_t icon_ALARM[] = {
+  0x0604f29f,
+  0x99f95fa1,
+  0xf83fc060
+};
+
+const uint32_t alarm_animation[][4] = {
+  { 0x0604f29f, 0x99f95fa1, 0xf83fc060, 200 },
+  { 0x0600f01f, 0x81f81f81, 0xf83fc180, 200 }
+};
+
 constexpr uint32_t frame_MON[] = {
   0x000aeeea,
   0xaaaaaaaa,
@@ -188,3 +205,10 @@ constexpr uint32_t COLON_NUM_6[3] = { 0xFCFCC0C1, 0xC1FCFCCD, 0xCDCCFCFC };
 constexpr uint32_t COLON_NUM_7[3] = { 0xFCFC0C0D, 0x0D0C0C0D, 0x0D0C0C0C };
 constexpr uint32_t COLON_NUM_8[3] = { 0xFCFCCCCD, 0xCDFCFCCD, 0xCDCCFCFC };
 constexpr uint32_t COLON_NUM_9[3] = { 0xFCFCCCCD, 0xCDFCFC0D, 0x0D0CFCFC };
+
+
+// Letters
+constexpr uint32_t MENU_M[3] = { 0xC3E7FFDB, 0xC3C3C3C3, 0xC3C3C3C3 };
+constexpr uint32_t MENU_E[3] = { 0xFFFFC0C0, 0xC0FCFCC0, 0xC0C0FFFF };
+constexpr uint32_t MENU_N[3] = { 0xC3E3E3F3, 0xF3DBDBCF, 0xCFC7C7C3 };
+constexpr uint32_t MENU_U[3] = { 0xC3C3C3C3, 0xC3C3C3C3, 0xC3C3FFFF };

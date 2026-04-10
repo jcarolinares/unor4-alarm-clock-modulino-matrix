@@ -63,11 +63,11 @@ int minutes = 0;
 RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 
 // Alarm time & Variables
-RTCTime alarmTime(7, Month::APRIL, 2026, 12, 01, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+RTCTime alarmTime(7, Month::APRIL, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = true;
 
 // State Machines Variables
-int state = 0;
+int state = 3;
 
 void setup() {
 
@@ -120,30 +120,59 @@ void setup() {
 
 void loop() {
 
+  
   // Transitions of the State Machine
   // TODO
+  
+  // Human interface sensors reading
+  click = knob.isPressed();
+
+  // Initial press entering menu mode
+  if (click == true && state != 0){ // Knob click enters Menu mode // FIXME after clock set or alarm sets it enters direcly on the menu, should not work that way
+    state = 3; // TODO should be 0 but I enter alarm mode until this menu is finished 
+    delay(500); // To avoid to skips because of the previous knob click
+  }
+
 
   // State Machine
   switch(state){
-    case 0: // Clock Mode
+    
+    case 0: // Menu mode
+      matrix_3.setFrame(MENU_M);
+      matrix_2.setFrame(MENU_E);
+      matrix_1.setFrame(MENU_N);
+      matrix_0.setFrame(MENU_U);
+    break;
+
+    case 1: // Clock Mode
       // Get current time from RTC
       RTC.getTime(currentTime);
 
       matrix_show_time();
       integrated_matrix_date();
       check_alarm();
-      delay(10000); // FIXME change this for a millis thing
+      delay(1000); // FIXME change this for a millis thing
     break;
 
-    case 1: // Manual Time Set
+    case 2: // Manual Time Set
       set_time();
-      state =0;
+      state = 1;
+      delay(500); // To avoid to enter into the menu because of the previous knob click
     break;
+
+    case 3: // Manual Alarm Time Set
+      set_alarm();
+      state = 1;
+      delay(500); // To avoid to enter into the menu because of the previous knob click
+    break;
+
   }
 
 }
 
 
+
+//---------------------- FUNCTIONALITY FUNCTIONS -----------------//
 
 // Check the Alarm time and triggered it when is the right time
 void check_alarm(){
@@ -154,18 +183,27 @@ void check_alarm(){
 
   // Alarm is ON
   if (alarm_status == true && current_hour == alarm_hour && current_minutes == alarm_minutes ){
-    for(int i = 0; i<20; i++){
+    
+    click = knob.isPressed();
+    integrated_matrix.loadFrame(icon_ALARM);
+  
+    while(click == false){
       buzzer.tone(494, 500);
+      
+      integrated_matrix.loadSequence(alarm_animation);
+      integrated_matrix.play(true);
+      
       delay(250);
       buzzer.tone(0, 500);
       delay(250);
+      
+      click = knob.isPressed();
     }
+    integrated_matrix.play(false);
     alarm_status = false;
+    integrated_matrix_date();
   }
 }
-
-
-//---------------------- MENU FUNCTIONS -----------------//
 
 // Manually set time using the Modulino Knob
 void set_time(){
@@ -232,6 +270,66 @@ void set_time(){
   buzzer.tone(frequency, duration);
 }
 
+// Manually set time using the Modulino Knob
+void set_alarm(){
+
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  // Hours tens
+  while(click == 0)
+  {
+    integrated_matrix.loadFrame(icon_ALARM_SET);
+    // Serial.println(hours);
+    if (direction == 1 && hours < 24){
+      buzzer.tone(330, duration);
+      hours++;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      matrix_show_alarm_time();
+    }
+    else if(direction == -1 && hours > 0){
+      hours--;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      matrix_show_alarm_time();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Hours Set");
+  delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
+
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  while(click == 0)
+  {
+    integrated_matrix.loadFrame(icon_ALARM_SET);
+    // Serial.println(minutes);
+    if (direction == 1 && minutes < 60){
+      buzzer.tone(330, duration);
+      minutes++;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      matrix_show_alarm_time();
+    }
+    else if(direction == -1 && minutes > 0){
+      minutes--;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      matrix_show_alarm_time();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Minutes Set");
+  buzzer.tone(frequency, duration);
+}
 
 //---------------------- MATRIX FRAMES FUNCTIONS -----------------//
 
@@ -404,6 +502,146 @@ void matrix_show_time()
   }
 }
 
+// Shows the time on each Modulino's Matrix
+void matrix_show_alarm_time()
+{
+  int hour_tens = alarmTime.getHour()/10;
+  int hour_units = alarmTime.getHour()%10;
+  int minutes_tens = alarmTime.getMinutes()/10;
+  int minutes_units = alarmTime.getMinutes()%10;
+
+  switch (hour_tens){
+    case 0:
+      matrix_3.setFrame(SEG_NUM_0);
+      break;
+    case 1:
+      matrix_3.setFrame(SEG_NUM_1);
+      break;
+    case 2:
+      matrix_3.setFrame(SEG_NUM_2);
+      break;
+    case 3:
+      matrix_3.setFrame(SEG_NUM_3);
+      break;
+    case 4:
+      matrix_3.setFrame(SEG_NUM_4);
+      break;
+    case 5:
+      matrix_3.setFrame(SEG_NUM_5);
+      break;
+    case 6:
+      matrix_3.setFrame(SEG_NUM_6);
+      break;
+    case 7:
+      matrix_3.setFrame(SEG_NUM_7);
+      break;
+    case 8:
+      matrix_3.setFrame(SEG_NUM_8);
+      break;
+    case 9:
+      matrix_3.setFrame(SEG_NUM_9);
+      break;
+  }
+
+  switch (hour_units){
+    case 0:
+      matrix_2.setFrame(COLON_NUM_0);
+      break;
+    case 1:
+      matrix_2.setFrame(COLON_NUM_1);
+      break;
+    case 2:
+      matrix_2.setFrame(COLON_NUM_2);
+      break;
+    case 3:
+      matrix_2.setFrame(COLON_NUM_3);
+      break;
+    case 4:
+      matrix_2.setFrame(COLON_NUM_4);
+      break;
+    case 5:
+      matrix_2.setFrame(COLON_NUM_5);
+      break;
+    case 6:
+      matrix_2.setFrame(COLON_NUM_6);
+      break;
+    case 7:
+      matrix_2.setFrame(COLON_NUM_7);
+      break;
+    case 8:
+      matrix_2.setFrame(COLON_NUM_8);
+      break;
+    case 9:
+      matrix_2.setFrame(COLON_NUM_9);
+      break;
+  }
+
+  switch (minutes_tens){
+    case 0:
+      matrix_1.setFrame(SEG_NUM_0);
+      break;
+    case 1:
+      matrix_1.setFrame(SEG_NUM_1);
+      break;
+    case 2:
+      matrix_1.setFrame(SEG_NUM_2);
+      break;
+    case 3:
+      matrix_1.setFrame(SEG_NUM_3);
+      break;
+    case 4:
+      matrix_1.setFrame(SEG_NUM_4);
+      break;
+    case 5:
+      matrix_1.setFrame(SEG_NUM_5);
+      break;
+    case 6:
+      matrix_1.setFrame(SEG_NUM_6);
+      break;
+    case 7:
+      matrix_1.setFrame(SEG_NUM_7);
+      break;
+    case 8:
+      matrix_1.setFrame(SEG_NUM_8);
+      break;
+    case 9:
+      matrix_1.setFrame(SEG_NUM_9);
+      break;
+  }
+
+  switch (minutes_units){
+    case 0:
+      matrix_0.setFrame(SEG_NUM_0);
+      break;
+    case 1:
+      matrix_0.setFrame(SEG_NUM_1);
+      break;
+    case 2:
+      matrix_0.setFrame(SEG_NUM_2);
+      break;
+    case 3:
+      matrix_0.setFrame(SEG_NUM_3);
+      break;
+    case 4:
+      matrix_0.setFrame(SEG_NUM_4);
+      break;
+    case 5:
+      matrix_0.setFrame(SEG_NUM_5);
+      break;
+    case 6:
+      matrix_0.setFrame(SEG_NUM_6);
+      break;
+    case 7:
+      matrix_0.setFrame(SEG_NUM_7);
+      break;
+    case 8:
+      matrix_0.setFrame(SEG_NUM_8);
+      break;
+    case 9:
+      matrix_0.setFrame(SEG_NUM_9);
+      break;
+  }
+}
 
 //---------------------- WIFI & NTP FUNCTIONS -----------------//
 
