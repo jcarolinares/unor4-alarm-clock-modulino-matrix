@@ -66,8 +66,14 @@ RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLigh
 RTCTime alarmTime(7, Month::APRIL, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = false;
 
+// Millis Variables
+const long interval = 10000;
+unsigned long previousMillis = 0;
+unsigned long currentMillis = millis();
+
 // State Machines Variables
-int state = 3;
+int state = 1;
+int menu_option = 0;
 
 void setup() {
 
@@ -88,34 +94,15 @@ void setup() {
   // Integrated Matrix Init Setup
   integrated_matrix.begin();
 
-  // Wifi Init Setup
-  connectToWiFi();
-  Serial.println("\nStarting connection to server...");
-  timeClient.begin();
-  timeClient.update();
+  getInternetTime();
 
-  // RTC, NTP and Timezone Init Setup
-  auto timeZoneOffsetHours = 2; // Time zone offset
-  auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
-  Serial.print("Unix time = ");
-  Serial.println(unixTime);
-  RTCTime timeToSet = RTCTime(unixTime);
-  RTC.setTime(timeToSet);
-
-  // Final RTC Timezone Configured
-  RTCTime currentTime;
-  RTC.getTime(currentTime); 
-  Serial.println("The RTC was just set to: " + String(currentTime));
-
-
-  // Time and Date Init Setup
-  // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE); // Debugging Manual Overiding
-  RTC.setTime(currentTime);
+  // // Time and Date Init Setup
+  // // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE); // Debugging Manual Overiding
+  // RTC.setTime(currentTime);
   
   // Initial Matrixes frames
   matrix_show_time();
   integrated_matrix_date();
-
 }
 
 void loop() {
@@ -128,9 +115,10 @@ void loop() {
   click = knob.isPressed();
 
   // Initial press entering menu mode
-  if (click == true && state != 0){ // Knob click enters Menu mode // FIXME after clock set or alarm sets it enters direcly on the menu, should not work that way
-    state = 3; // TODO should be 0 but I enter alarm mode until this menu is finished 
-    delay(760); // To avoid to skips because of the previous knob click
+  if (click == true && state != 0){ // Knob click enters Menu mode
+    buzzer.tone(frequency, duration);
+    state = 0;
+    delay(500); // To avoid to skips because of the previous knob click
   }
 
 
@@ -138,32 +126,83 @@ void loop() {
   switch(state){
     
     case 0: // Menu mode
+
+      // Matrixes Animation
       matrix_3.setFrame(MENU_M);
       matrix_2.setFrame(MENU_E);
       matrix_1.setFrame(MENU_N);
       matrix_0.setFrame(MENU_U);
+
+      click = knob.isPressed();
+
+      // Menu 
+      // Initial press entering menu mode
+      menu_option = 0;
+      while (click == false){ // Knob click enters Menu mode
+        click = knob.isPressed();
+        direction = knob.getDirection();
+
+        if(direction == 1 && menu_option < 3){
+          buzzer.tone(494, duration);
+          menu_option++;
+        }
+        else if(direction == -1 && menu_option  > 0){
+          buzzer.tone(330, duration);
+          menu_option--;
+        }
+
+        switch(menu_option){ // Menu Navigation & Selection
+          case 0:
+            integrated_matrix.loadFrame(icon_MENU_TIME);
+            state = 2;
+           break;
+          case 1:
+            integrated_matrix.loadFrame(icon_MENU_ALARM);
+            state = 3;
+            break;
+          case 2:
+            integrated_matrix.loadFrame(icon_MENU_SYNC);
+            state = 4;
+            break;
+          case 3:
+            integrated_matrix.loadFrame(icon_MENU_EXIT);
+            state = 1;
+            break;            
+        }
+      }
+    buzzer.tone(frequency, duration);  
+    delay(500); // To avoid Double knob click
     break;
 
     case 1: // Clock Mode
-      // Get current time from RTC
-      RTC.getTime(currentTime);
+      currentMillis = millis();
+      if (currentMillis - previousMillis >= interval){
+        previousMillis = currentMillis;
 
-      matrix_show_time();
-      integrated_matrix_date();
-      check_alarm();
-      delay(1000); // FIXME change this for a millis thing
+        // Get current time from RTC
+        RTC.getTime(currentTime);
+
+        matrix_show_time();
+        integrated_matrix_date();
+        check_alarm();
+      } 
     break;
 
     case 2: // Manual Time Set
       set_time();
       state = 1;
-      delay(500); // To avoid to enter into the menu because of the previous knob click
+      delay(750); // To avoid to enter into the menu because of the previous knob click
     break;
 
     case 3: // Manual Alarm Time Set
       set_alarm();
       state = 1;
-      delay(500); // To avoid to enter into the menu because of the previous knob click
+      delay(750); // To avoid to enter into the menu because of the previous knob click
+    break;
+
+    case 4: // NTP Time Synch
+      getInternetTime();
+      state = 1;
     break;
 
   }
@@ -208,6 +247,11 @@ void check_alarm(){
 // Manually set time using the Modulino Knob
 void set_time(){
 
+  matrix_3.setFrame(SEG_NUM_0);
+  matrix_2.setFrame(SEG_NUM_0);
+  matrix_1.setFrame(SEG_NUM_0);
+  matrix_0.setFrame(SEG_NUM_0);
+
   position = knob.get();
   click = knob.isPressed();
   direction = knob.getDirection();
@@ -218,13 +262,14 @@ void set_time(){
     integrated_matrix.loadFrame(icon_HOUR);
     // Serial.println(hours);
     if (direction == 1 && hours < 24){
-      buzzer.tone(330, duration);
+      buzzer.tone(494, duration);
       hours++;
       currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
     else if(direction == -1 && hours > 0){
+      buzzer.tone(330, duration);
       hours--;
       currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
@@ -237,6 +282,7 @@ void set_time(){
   }
 
   Serial.println("Hours Set");
+  buzzer.tone(frequency, duration);
   delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
 
   position = knob.get();
@@ -248,13 +294,14 @@ void set_time(){
     integrated_matrix.loadFrame(icon_MIN);
     // Serial.println(minutes);
     if (direction == 1 && minutes < 60){
-      buzzer.tone(330, duration);
+      buzzer.tone(494, duration);
       minutes++;
       currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
     else if(direction == -1 && minutes > 0){
+      buzzer.tone(330, duration);
       minutes--;
       currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
@@ -273,6 +320,11 @@ void set_time(){
 // Manually set time using the Modulino Knob
 void set_alarm(){
 
+  matrix_3.setFrame(SEG_NUM_0);
+  matrix_2.setFrame(SEG_NUM_0);
+  matrix_1.setFrame(SEG_NUM_0);
+  matrix_0.setFrame(SEG_NUM_0);
+
   position = knob.get();
   click = knob.isPressed();
   direction = knob.getDirection();
@@ -283,12 +335,13 @@ void set_alarm(){
     integrated_matrix.loadFrame(icon_ALARM_SET);
     // Serial.println(hours);
     if (direction == 1 && hours < 24){
-      buzzer.tone(330, duration);
+      buzzer.tone(494, duration);
       hours++;
       alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
     else if(direction == -1 && hours > 0){
+      buzzer.tone(330, duration);
       hours--;
       alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
@@ -300,6 +353,7 @@ void set_alarm(){
   }
 
   Serial.println("Hours Set");
+  buzzer.tone(frequency, duration);
   delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
 
   position = knob.get();
@@ -311,12 +365,13 @@ void set_alarm(){
     integrated_matrix.loadFrame(icon_ALARM_SET);
     // Serial.println(minutes);
     if (direction == 1 && minutes < 60){
-      buzzer.tone(330, duration);
+      buzzer.tone(494, duration);
       minutes++;
       alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
     else if(direction == -1 && minutes > 0){
+      buzzer.tone(330, duration);
       minutes--;
       alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
@@ -675,7 +730,26 @@ void connectToWiFi(){
   printWifiStatus();
 }
 
+void getInternetTime(){
+  // Wifi Init Setup
+  connectToWiFi();
+  Serial.println("\nStarting connection to server...");
+  timeClient.begin();
+  timeClient.update();
 
+  // RTC, NTP and Timezone Init Setup
+  auto timeZoneOffsetHours = 2; // Time zone offset
+  auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
+  Serial.print("Unix time = ");
+  Serial.println(unixTime);
+  RTCTime timeToSet = RTCTime(unixTime);
+  RTC.setTime(timeToSet);
+
+  // Final RTC Timezone Configured
+  RTCTime currentTime;
+  RTC.getTime(currentTime); 
+  Serial.println("The RTC was just set to: " + String(currentTime));
+}
 
 //---------------------- DEBUGGING FUNCTIONS -----------------//
 

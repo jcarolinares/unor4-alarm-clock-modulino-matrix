@@ -54,9 +54,9 @@ constexpr uint32_t frame_FRI[] = {
 };
 
 constexpr uint32_t frame_SAT[] = {
-  0x000eee8a,
-  0x4eee2a4e,
-  0xa4000000
+  0x00072745,
+  0x27721527,
+  0x52000000
 };
 
 constexpr uint32_t frame_SUN[] = {
@@ -78,6 +78,37 @@ constexpr uint32_t icon_MIN[] = {
   0xef2a82a4,
   0x4a380000
 };
+
+constexpr uint32_t icon_MENU_TIME[] = {
+  0x0f020844,
+  0x44444744,
+  0x042080f0
+};
+
+constexpr uint32_t icon_MENU_ALARM[] = {
+  0x0600f01f,
+  0x81f81f81,
+  0xf83fc060
+};
+
+constexpr uint32_t icon_MENU_WIFI[] = {
+  0x0001f820,
+  0x40f01080,
+  0x00060060
+};
+
+constexpr uint32_t icon_MENU_EXIT[] = {
+  0x000f8088,
+  0x88849fe8,
+  0x84888f80
+};
+
+constexpr uint32_t icon_MENU_SYNC[] = {
+  0x00020470,
+  0x4a842152,
+  0x0e204000
+};
+
 
 // END of UNO R4 Matrix frames
 
