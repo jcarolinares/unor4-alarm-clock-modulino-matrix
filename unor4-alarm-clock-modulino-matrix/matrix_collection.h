@@ -109,6 +109,19 @@ constexpr uint32_t icon_MENU_SYNC[] = {
   0x0e204000
 };
 
+// Month frames
+constexpr uint32_t frame_JAN[] = { 0x00032515, 0x71775552, 0x55000000 };
+constexpr uint32_t frame_FEB[] = { 0x00077644, 0x56664454, 0x76000000 };
+constexpr uint32_t frame_MAR[] = { 0x00052675, 0x55765555, 0x55000000 };
+constexpr uint32_t frame_APR[] = { 0x00026655, 0x57665455, 0x45000000 };
+constexpr uint32_t frame_MAY[] = { 0x00052575, 0x55725525, 0x52000000 };
+constexpr uint32_t frame_JUN[] = { 0x00035515, 0x71575552, 0x75000000 };
+constexpr uint32_t frame_JUL[] = { 0x00035415, 0x41545542, 0x77000000 };
+constexpr uint32_t frame_AUG[] = { 0x00025755, 0x47575555, 0x77000000 };
+constexpr uint32_t frame_SEP[] = { 0x00077644, 0x57661447, 0x74000000 };
+constexpr uint32_t frame_OCT[] = { 0x00027754, 0x25425422, 0x72000000 };
+constexpr uint32_t frame_NOV[] = { 0x00052575, 0x57555555, 0x22000000 };
+constexpr uint32_t frame_DEC[] = { 0x00067754, 0x45645446, 0x77000000 };
 
 // END of UNO R4 Matrix frames
 
@@ -243,3 +256,5 @@ constexpr uint32_t MENU_M[3] = { 0xC3E7FFDB, 0xC3C3C3C3, 0xC3C3C3C3 };
 constexpr uint32_t MENU_E[3] = { 0xFFFFC0C0, 0xC0FCFCC0, 0xC0C0FFFF };
 constexpr uint32_t MENU_N[3] = { 0xC3E3E3F3, 0xF3DBDBCF, 0xCFC7C7C3 };
 constexpr uint32_t MENU_U[3] = { 0xC3C3C3C3, 0xC3C3C3C3, 0xC3C3FFFF };
+constexpr uint32_t MENU_t_lower[3] = { 0x18181818, 0x7E7E1818, 0x18181E1E };
+constexpr uint32_t MENU_h_lower[3] = { 0x60606060, 0x7E7E6666, 0x66666666 };

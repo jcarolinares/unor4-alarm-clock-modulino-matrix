@@ -59,6 +59,8 @@ int duration = 100;  // Duration of the tone in milliseconds
 int hours = 0;
 int minutes = 0;
 DayOfWeek day_of_week[] = {DayOfWeek::MONDAY, DayOfWeek::TUESDAY, DayOfWeek::WEDNESDAY, DayOfWeek::THURSDAY, DayOfWeek::FRIDAY, DayOfWeek::SATURDAY, DayOfWeek::SUNDAY};
+Month months_of_year[] = {Month::JANUARY, Month::FEBRUARY, Month::MARCH, Month::APRIL, Month::MAY, Month::JUNE, Month::JULY, Month::AUGUST, Month::SEPTEMBER, Month::OCTOBER, Month::NOVEMBER, Month::DECEMBER};
+int day_of_month_index = 1;
 
 
 // Initial time
@@ -69,13 +71,16 @@ RTCTime alarmTime(7, Month::APRIL, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLigh
 bool alarm_status = false;
 
 // Millis Variables
-const long interval = 10000;
+const long interval_time = 10000;
 unsigned long previousMillis = 0;
 unsigned long currentMillis = millis();
 
 // State Machines Variables
 int state = 1;
 int menu_option = 0;
+
+// Date Show Up Variables
+int show_date_ite = 0; // When the date shows up after a number of time iterations
 
 void setup() {
 
@@ -111,10 +116,33 @@ void loop() {
 
   // Transitions of the State Machine
   // Human interface sensors reading
+  direction = knob.getDirection();
   click = knob.isPressed();
 
   // Initial press entering menu mode
-  if (click == true && state != 0){ // Knob click enters Menu mode
+  if (direction == 1){
+    buzzer.tone(frequency, duration);
+
+    // Instant show up of Date and year
+    RTC.getTime(currentTime);
+    show_date_and_year();
+
+    state = 5;
+    delay(500); // To avoid to skips because of the previous knob click
+  }
+  else if (direction == -1){
+    buzzer.tone(frequency, duration);
+
+    // Get current time from RTC
+    RTC.getTime(currentTime);
+
+    matrix_show_time();
+    integrated_matrix_date();
+
+    state = 1;
+    delay(500); // To avoid to skips because of the previous knob click
+  }
+  else if (click == true && state != 0){ // Knob click enters Menu mode
     buzzer.tone(frequency, duration);
     state = 0;
     delay(500); // To avoid to skips because of the previous knob click
@@ -175,7 +203,16 @@ void loop() {
 
     case 1: // Clock Mode
       currentMillis = millis();
-      if (currentMillis - previousMillis >= interval){
+      
+      if(show_date_ite>3){ // Every a number of seconds we show the date instead of the time
+        show_date_ite = 0;
+
+        // Get current time from RTC
+        RTC.getTime(currentTime);
+        show_date_and_year();
+        check_alarm();
+      }
+      else if (currentMillis - previousMillis >= interval_time){
         previousMillis = currentMillis;
 
         // Get current time from RTC
@@ -184,10 +221,12 @@ void loop() {
         matrix_show_time();
         integrated_matrix_date();
         check_alarm();
+        show_date_ite++;
       } 
+      
     break;
 
-    case 2: // Manual Time Set
+    case 2: // Manual Time Set 
       set_time();
       state = 1;
       delay(750); // To avoid to enter into the menu because of the previous knob click
@@ -203,7 +242,20 @@ void loop() {
       getInternetTime();
       state = 1;
     break;
+    
+    case 5: // Date and Year Mode
 
+      // Serial.println("INSIDE CASE 5");
+      currentMillis = millis();
+      if (currentMillis - previousMillis >= interval_time){
+        previousMillis = currentMillis;
+
+        // Get current time from RTC
+        RTC.getTime(currentTime);
+        show_date_and_year();
+        check_alarm();
+      } 
+    break;
   }
 
 }
@@ -449,6 +501,49 @@ void integrated_matrix_date()
   }
   else if(day_of_week == DayOfWeek::SUNDAY){
     integrated_matrix.loadFrame(frame_SUN);
+  }
+  delay(100);
+}
+
+// Shows on the R4 Integrated Matrix theMonth
+void integrated_matrix_month()
+{
+  Month currently_month = currentTime.getMonth();
+  if(currently_month == Month::JANUARY){
+    integrated_matrix.loadFrame(frame_JAN);
+  }
+  else if(currently_month == Month::FEBRUARY){
+    integrated_matrix.loadFrame(frame_FEB);
+  }
+  else if(currently_month == Month::MARCH){
+    integrated_matrix.loadFrame(frame_MAR);
+  }
+  else if(currently_month == Month::APRIL){
+    integrated_matrix.loadFrame(frame_APR);
+  }
+  else if(currently_month == Month::MAY){
+    integrated_matrix.loadFrame(frame_MAY);
+  }
+  else if(currently_month == Month::JUNE){
+    integrated_matrix.loadFrame(frame_JUN);
+  }
+  else if(currently_month == Month::JULY){
+    integrated_matrix.loadFrame(frame_JUL);
+  }
+  else if(currently_month == Month::AUGUST){
+    integrated_matrix.loadFrame(frame_AUG);
+  }
+  else if(currently_month == Month::SEPTEMBER){
+    integrated_matrix.loadFrame(frame_SEP);
+  }
+  else if(currently_month == Month::OCTOBER){
+    integrated_matrix.loadFrame(frame_OCT);
+  }
+  else if(currently_month == Month::NOVEMBER){
+    integrated_matrix.loadFrame(frame_NOV);
+  }
+  else if(currently_month == Month::DECEMBER){
+    integrated_matrix.loadFrame(frame_DEC);
   }
   delay(100);
 }
@@ -734,6 +829,85 @@ void matrix_show_alarm_time()
       break;
   }
 }
+
+void show_date_and_year(){
+  int day_tens = currentTime.getDayOfMonth()/10;
+  int day_units = currentTime.getDayOfMonth()%10;
+  // int month_tens = static_cast<int>(currentTime.getMonth())/10;
+  // int month_units = static_cast<int>(currentTime.getMonth())%10;
+
+  switch (day_tens){
+    case 0:
+      matrix_3.setFrame(SEG_NUM_0);
+      break;
+    case 1:
+      matrix_3.setFrame(SEG_NUM_1);
+      break;
+    case 2:
+      matrix_3.setFrame(SEG_NUM_2);
+      break;
+    case 3:
+      matrix_3.setFrame(SEG_NUM_3);
+      break;
+    case 4:
+      matrix_3.setFrame(SEG_NUM_4);
+      break;
+    case 5:
+      matrix_3.setFrame(SEG_NUM_5);
+      break;
+    case 6:
+      matrix_3.setFrame(SEG_NUM_6);
+      break;
+    case 7:
+      matrix_3.setFrame(SEG_NUM_7);
+      break;
+    case 8:
+      matrix_3.setFrame(SEG_NUM_8);
+      break;
+    case 9:
+      matrix_3.setFrame(SEG_NUM_9);
+      break;
+  }
+
+  switch (day_units){
+    case 0:
+      matrix_2.setFrame(SEG_NUM_0);
+      break;
+    case 1:
+      matrix_2.setFrame(SEG_NUM_1);
+      break;
+    case 2:
+      matrix_2.setFrame(SEG_NUM_2);
+      break;
+    case 3:
+      matrix_2.setFrame(SEG_NUM_3);
+      break;
+    case 4:
+      matrix_2.setFrame(SEG_NUM_4);
+      break;
+    case 5:
+      matrix_2.setFrame(SEG_NUM_5);
+      break;
+    case 6:
+      matrix_2.setFrame(SEG_NUM_6);
+      break;
+    case 7:
+      matrix_2.setFrame(SEG_NUM_7);
+      break;
+    case 8:
+      matrix_2.setFrame(SEG_NUM_8);
+      break;
+    case 9:
+      matrix_2.setFrame(SEG_NUM_9);
+      break;
+  }
+
+  matrix_1.setFrame(MENU_t_lower);
+  matrix_0.setFrame(MENU_h_lower);
+
+  integrated_matrix_month();
+}
+
 
 //---------------------- WIFI & NTP FUNCTIONS -----------------//
 
