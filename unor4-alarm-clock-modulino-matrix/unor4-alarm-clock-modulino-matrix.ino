@@ -58,6 +58,8 @@ int duration = 100;  // Duration of the tone in milliseconds
 // RTC Variables
 int hours = 0;
 int minutes = 0;
+DayOfWeek day_of_week[] = {DayOfWeek::MONDAY, DayOfWeek::TUESDAY, DayOfWeek::WEDNESDAY, DayOfWeek::THURSDAY, DayOfWeek::FRIDAY, DayOfWeek::SATURDAY, DayOfWeek::SUNDAY};
+
 
 // Initial time
 RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
@@ -107,10 +109,7 @@ void setup() {
 
 void loop() {
 
-  
   // Transitions of the State Machine
-  // TODO
-  
   // Human interface sensors reading
   click = knob.isPressed();
 
@@ -256,7 +255,7 @@ void set_time(){
   click = knob.isPressed();
   direction = knob.getDirection();
 
-  // Hours tens
+  // Hours Set
   while(click == 0)
   {
     integrated_matrix.loadFrame(icon_HOUR);
@@ -285,6 +284,7 @@ void set_time(){
   buzzer.tone(frequency, duration);
   delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
 
+  // 
   position = knob.get();
   click = knob.isPressed();
   direction = knob.getDirection();
@@ -306,6 +306,42 @@ void set_time(){
       currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Minutes Set");
+  buzzer.tone(frequency, duration);
+  delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
+
+  
+  // Day set
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  int day_of_week_index = 0;
+  integrated_matrix_date();
+  while(click == 0)
+  {
+    // integrated_matrix.loadFrame(icon_MIN);
+    // Serial.println(minutes);
+    if (direction == 1 && day_of_week_index < 6){
+      buzzer.tone(494, duration);
+      day_of_week_index++;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      integrated_matrix_date();
+    }
+    else if(direction == -1 && day_of_week_index > 0){
+      buzzer.tone(330, duration);
+      day_of_week_index--;
+      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      integrated_matrix_date();
     }
 
     position = knob.get();
@@ -702,12 +738,13 @@ void matrix_show_alarm_time()
 //---------------------- WIFI & NTP FUNCTIONS -----------------//
 
 // Manages the Wifi connection
-void connectToWiFi(){
+bool connectToWiFi(){
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
     // don't continue
-    while (true);
+    // while (true); // FIXME, clock should continue without internet
+    return false;
   }
 
   String fv = WiFi.firmwareVersion();
@@ -715,40 +752,52 @@ void connectToWiFi(){
     Serial.println("Please upgrade the firmware");
   }
 
+  int attempts_counter = 0; // To store total number of connection attemps before connection timeout
   // attempt to connect to WiFi network:
-  while (wifiStatus != WL_CONNECTED) {
+  while (wifiStatus != WL_CONNECTED) { //TODO add here a 1 minute timeout
+    attempts_counter++;
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     wifiStatus = WiFi.begin(ssid, pass);
-
     // wait 10 seconds for connection:
     delay(10000);
+
+    if(attempts_counter >=6 ){ // One minute timeout
+      Serial.println("Network Connection Timeout - Not possible to connect");
+      return false;
+    }
   }
 
   Serial.println("Connected to WiFi");
   printWifiStatus();
+  return true;
 }
 
 void getInternetTime(){
   // Wifi Init Setup
-  connectToWiFi();
-  Serial.println("\nStarting connection to server...");
-  timeClient.begin();
-  timeClient.update();
+  if (connectToWiFi() == true){
+    Serial.println("\nStarting connection to server...");
+    timeClient.begin();
+    timeClient.update();
 
-  // RTC, NTP and Timezone Init Setup
-  auto timeZoneOffsetHours = 2; // Time zone offset
-  auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
-  Serial.print("Unix time = ");
-  Serial.println(unixTime);
-  RTCTime timeToSet = RTCTime(unixTime);
-  RTC.setTime(timeToSet);
+    // RTC, NTP and Timezone Init Setup
+    auto timeZoneOffsetHours = 2; // Time zone offset
+    auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
+    Serial.print("Unix time = ");
+    Serial.println(unixTime);
+    RTCTime timeToSet = RTCTime(unixTime);
+    RTC.setTime(timeToSet);
 
-  // Final RTC Timezone Configured
-  RTCTime currentTime;
-  RTC.getTime(currentTime); 
-  Serial.println("The RTC was just set to: " + String(currentTime));
+    // Final RTC Timezone Configured
+    RTCTime currentTime;
+    RTC.getTime(currentTime); 
+    Serial.println("The RTC was just set to: " + String(currentTime));
+  }
+  else{
+    Serial.println("\nInternet connection failed. Starting Manual Set Time");
+    state = 2;
+  }
 }
 
 //---------------------- DEBUGGING FUNCTIONS -----------------//
