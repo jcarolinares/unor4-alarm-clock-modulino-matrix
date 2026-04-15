@@ -82,6 +82,7 @@ int menu_option = 0;
 // Date Show Up Variables
 int show_date_ite = 0; // When the date shows up after a number of time iterations
 
+
 void setup() {
 
   Serial.begin(115200);
@@ -125,7 +126,7 @@ void loop() {
 
     // Instant show up of Date and year
     RTC.getTime(currentTime);
-    show_date_and_year();
+    show_date_and_month();
 
     state = 5;
     delay(500); // To avoid to skips because of the previous knob click
@@ -169,7 +170,7 @@ void loop() {
         click = knob.isPressed();
         direction = knob.getDirection();
 
-        if(direction == 1 && menu_option < 3){
+        if(direction == 1 && menu_option < 4){
           buzzer.tone(494, duration);
           menu_option++;
         }
@@ -192,9 +193,13 @@ void loop() {
             state = 4;
             break;
           case 3:
+            integrated_matrix.loadFrame(icon_MENU_DATE);
+            state = 1; // TODO call state of setup date
+            break;               
+          case 4:
             integrated_matrix.loadFrame(icon_MENU_EXIT);
             state = 1;
-            break;            
+            break;
         }
       }
     buzzer.tone(frequency, duration);  
@@ -209,7 +214,7 @@ void loop() {
 
         // Get current time from RTC
         RTC.getTime(currentTime);
-        show_date_and_year();
+        show_date_and_month();
         check_alarm();
       }
       else if (currentMillis - previousMillis >= interval_time){
@@ -243,16 +248,15 @@ void loop() {
       state = 1;
     break;
     
-    case 5: // Date and Year Mode
+    case 5: // Date and Month Mode
 
-      // Serial.println("INSIDE CASE 5");
       currentMillis = millis();
       if (currentMillis - previousMillis >= interval_time){
         previousMillis = currentMillis;
 
         // Get current time from RTC
         RTC.getTime(currentTime);
-        show_date_and_year();
+        show_date_and_month();
         check_alarm();
       } 
     break;
@@ -336,7 +340,7 @@ void set_time(){
   buzzer.tone(frequency, duration);
   delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
 
-  // 
+  // Minutes Set
   position = knob.get();
   click = knob.isPressed();
   direction = knob.getDirection();
@@ -548,148 +552,54 @@ void integrated_matrix_month()
   delay(100);
 }
 
-// Shows the time on each Modulino's Matrix
-void matrix_show_time()
-{
-  int hour_tens = currentTime.getHour()/10;
-  int hour_units = currentTime.getHour()%10;
-  int minutes_tens = currentTime.getMinutes()/10;
-  int minutes_units = currentTime.getMinutes()%10;
-
-  switch (hour_tens){
-    case 0:
-      matrix_3.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_3.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_3.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_3.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_3.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_3.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_3.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_3.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_3.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_3.setFrame(SEG_NUM_9);
-      break;
+// Helper functions to avoid a lot of switch cases on the matrix_show_time function
+void setSegmentFrame(ModulinoLEDMatrix& matrix, int digit) {
+  switch (digit) { // You can change here the Number Font
+    case 0: matrix.setFrame(SEG_NUM_0); break;
+    case 1: matrix.setFrame(SEG_NUM_1); break;
+    case 2: matrix.setFrame(SEG_NUM_2); break;
+    case 3: matrix.setFrame(SEG_NUM_3); break;
+    case 4: matrix.setFrame(SEG_NUM_4); break;
+    case 5: matrix.setFrame(SEG_NUM_5); break;
+    case 6: matrix.setFrame(SEG_NUM_6); break;
+    case 7: matrix.setFrame(SEG_NUM_7); break;
+    case 8: matrix.setFrame(SEG_NUM_8); break;
+    case 9: matrix.setFrame(SEG_NUM_9); break;
   }
+}
 
-  switch (hour_units){
-    case 0:
-      matrix_2.setFrame(COLON_NUM_0);
-      break;
-    case 1:
-      matrix_2.setFrame(COLON_NUM_1);
-      break;
-    case 2:
-      matrix_2.setFrame(COLON_NUM_2);
-      break;
-    case 3:
-      matrix_2.setFrame(COLON_NUM_3);
-      break;
-    case 4:
-      matrix_2.setFrame(COLON_NUM_4);
-      break;
-    case 5:
-      matrix_2.setFrame(COLON_NUM_5);
-      break;
-    case 6:
-      matrix_2.setFrame(COLON_NUM_6);
-      break;
-    case 7:
-      matrix_2.setFrame(COLON_NUM_7);
-      break;
-    case 8:
-      matrix_2.setFrame(COLON_NUM_8);
-      break;
-    case 9:
-      matrix_2.setFrame(COLON_NUM_9);
-      break;
-  }
-
-  switch (minutes_tens){
-    case 0:
-      matrix_1.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_1.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_1.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_1.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_1.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_1.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_1.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_1.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_1.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_1.setFrame(SEG_NUM_9);
-      break;
-  }
-
-  switch (minutes_units){
-    case 0:
-      matrix_0.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_0.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_0.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_0.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_0.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_0.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_0.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_0.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_0.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_0.setFrame(SEG_NUM_9);
-      break;
+// Helper function for the colon numbers (matrix 2)
+void setColonFrame(ModulinoLEDMatrix& matrix, int digit) {
+  switch (digit) { // You can change here the Number Font
+    case 0: matrix.setFrame(COLON_NUM_0); break;
+    case 1: matrix.setFrame(COLON_NUM_1); break;
+    case 2: matrix.setFrame(COLON_NUM_2); break;
+    case 3: matrix.setFrame(COLON_NUM_3); break;
+    case 4: matrix.setFrame(COLON_NUM_4); break;
+    case 5: matrix.setFrame(COLON_NUM_5); break;
+    case 6: matrix.setFrame(COLON_NUM_6); break;
+    case 7: matrix.setFrame(COLON_NUM_7); break;
+    case 8: matrix.setFrame(COLON_NUM_8); break;
+    case 9: matrix.setFrame(COLON_NUM_9); break;
   }
 }
 
 // Shows the time on each Modulino's Matrix
+void matrix_show_time()
+{
+  int hour_tens = currentTime.getHour() / 10;
+  int hour_units = currentTime.getHour() % 10;
+  int minutes_tens = currentTime.getMinutes() / 10;
+  int minutes_units = currentTime.getMinutes() % 10;
+
+  // Call the helpers to set the correct frame on each matrix
+  setSegmentFrame(matrix_3, hour_tens);
+  setColonFrame(matrix_2, hour_units); // Units of hours is special it includes a colon on the frames
+  setSegmentFrame(matrix_1, minutes_tens);
+  setSegmentFrame(matrix_0, minutes_units);
+}
+
+// Shows the Alarm time on each Modulino's Matrix
 void matrix_show_alarm_time()
 {
   int hour_tens = alarmTime.getHour()/10;
@@ -697,210 +607,21 @@ void matrix_show_alarm_time()
   int minutes_tens = alarmTime.getMinutes()/10;
   int minutes_units = alarmTime.getMinutes()%10;
 
-  switch (hour_tens){
-    case 0:
-      matrix_3.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_3.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_3.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_3.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_3.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_3.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_3.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_3.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_3.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_3.setFrame(SEG_NUM_9);
-      break;
-  }
-
-  switch (hour_units){
-    case 0:
-      matrix_2.setFrame(COLON_NUM_0);
-      break;
-    case 1:
-      matrix_2.setFrame(COLON_NUM_1);
-      break;
-    case 2:
-      matrix_2.setFrame(COLON_NUM_2);
-      break;
-    case 3:
-      matrix_2.setFrame(COLON_NUM_3);
-      break;
-    case 4:
-      matrix_2.setFrame(COLON_NUM_4);
-      break;
-    case 5:
-      matrix_2.setFrame(COLON_NUM_5);
-      break;
-    case 6:
-      matrix_2.setFrame(COLON_NUM_6);
-      break;
-    case 7:
-      matrix_2.setFrame(COLON_NUM_7);
-      break;
-    case 8:
-      matrix_2.setFrame(COLON_NUM_8);
-      break;
-    case 9:
-      matrix_2.setFrame(COLON_NUM_9);
-      break;
-  }
-
-  switch (minutes_tens){
-    case 0:
-      matrix_1.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_1.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_1.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_1.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_1.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_1.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_1.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_1.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_1.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_1.setFrame(SEG_NUM_9);
-      break;
-  }
-
-  switch (minutes_units){
-    case 0:
-      matrix_0.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_0.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_0.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_0.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_0.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_0.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_0.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_0.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_0.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_0.setFrame(SEG_NUM_9);
-      break;
-  }
+  // Call the helpers to set the correct frame on each matrix
+  setSegmentFrame(matrix_3, hour_tens);
+  setColonFrame(matrix_2, hour_units); // Units of hours is special it includes a colon on the frames
+  setSegmentFrame(matrix_1, minutes_tens);
+  setSegmentFrame(matrix_0, minutes_units);
 }
 
-void show_date_and_year(){
+
+// Shows the Date and Month
+void show_date_and_month(){
   int day_tens = currentTime.getDayOfMonth()/10;
   int day_units = currentTime.getDayOfMonth()%10;
-  // int month_tens = static_cast<int>(currentTime.getMonth())/10;
-  // int month_units = static_cast<int>(currentTime.getMonth())%10;
 
-  switch (day_tens){
-    case 0:
-      matrix_3.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_3.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_3.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_3.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_3.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_3.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_3.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_3.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_3.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_3.setFrame(SEG_NUM_9);
-      break;
-  }
-
-  switch (day_units){
-    case 0:
-      matrix_2.setFrame(SEG_NUM_0);
-      break;
-    case 1:
-      matrix_2.setFrame(SEG_NUM_1);
-      break;
-    case 2:
-      matrix_2.setFrame(SEG_NUM_2);
-      break;
-    case 3:
-      matrix_2.setFrame(SEG_NUM_3);
-      break;
-    case 4:
-      matrix_2.setFrame(SEG_NUM_4);
-      break;
-    case 5:
-      matrix_2.setFrame(SEG_NUM_5);
-      break;
-    case 6:
-      matrix_2.setFrame(SEG_NUM_6);
-      break;
-    case 7:
-      matrix_2.setFrame(SEG_NUM_7);
-      break;
-    case 8:
-      matrix_2.setFrame(SEG_NUM_8);
-      break;
-    case 9:
-      matrix_2.setFrame(SEG_NUM_9);
-      break;
-  }
+  setSegmentFrame(matrix_3, day_tens);
+  setSegmentFrame(matrix_2, day_units);
 
   matrix_1.setFrame(MENU_t_lower);
   matrix_0.setFrame(MENU_h_lower);
@@ -930,6 +651,12 @@ bool connectToWiFi(){
   // attempt to connect to WiFi network:
   while (wifiStatus != WL_CONNECTED) { //TODO add here a 1 minute timeout
     attempts_counter++;
+    
+    if(attempts_counter >1){ // 20 seconds timeout
+      Serial.println("Network Connection Timeout - Not possible to connect");
+      return false;
+    }
+    
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
@@ -937,10 +664,6 @@ bool connectToWiFi(){
     // wait 10 seconds for connection:
     delay(10000);
 
-    if(attempts_counter >=6 ){ // One minute timeout
-      Serial.println("Network Connection Timeout - Not possible to connect");
-      return false;
-    }
   }
 
   Serial.println("Connected to WiFi");

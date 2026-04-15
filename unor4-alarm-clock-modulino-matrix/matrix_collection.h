@@ -109,6 +109,12 @@ constexpr uint32_t icon_MENU_SYNC[] = {
   0x0e204000
 };
 
+constexpr uint32_t icon_MENU_DATE[] = {
+  0x1083fc3f,
+  0xc2042342,
+  0x343fc000
+};
+
 // Month frames
 constexpr uint32_t frame_JAN[] = { 0x00032515, 0x71775552, 0x55000000 };
 constexpr uint32_t frame_FEB[] = { 0x00077644, 0x56664454, 0x76000000 };
