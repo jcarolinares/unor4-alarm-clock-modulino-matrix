@@ -11,7 +11,6 @@
 #include <Arduino_Modulino.h>
 #include "ArduinoGraphics.h"
 #include "Modulino_LED_Matrix.h"
-// #include "LEDMatrixGallery.h" // This header contains predefined animations for the LED matrix_0 display.
 #include "matrix_collection.h"
 #include "RTC.h"
 #include "Arduino_LED_Matrix.h" // Library for the Integrated Matrix of the UNO R4/UNOQ
@@ -64,10 +63,10 @@ int day_of_month_index = 1;
 
 
 // Initial time
-RTCTime currentTime(7, Month::APRIL, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+RTCTime currentTime(day_of_month_index, Month::JANUARY, 2026, 0, 0, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 
 // Alarm time & Variables
-RTCTime alarmTime(7, Month::APRIL, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+RTCTime alarmTime(day_of_month_index, Month::JANUARY, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = false;
 
 // Millis Variables
@@ -194,7 +193,7 @@ void loop() {
             break;
           case 3:
             integrated_matrix.loadFrame(icon_MENU_DATE);
-            state = 1; // TODO call state of setup date
+            state = 6;
             break;               
           case 4:
             integrated_matrix.loadFrame(icon_MENU_EXIT);
@@ -211,7 +210,6 @@ void loop() {
       
       if(show_date_ite>3){ // Every a number of seconds we show the date instead of the time
         show_date_ite = 0;
-
         // Get current time from RTC
         RTC.getTime(currentTime);
         show_date_and_month();
@@ -259,6 +257,12 @@ void loop() {
         show_date_and_month();
         check_alarm();
       } 
+    break;
+
+    case 6: // Date and Month Setup
+      set_date();
+      state = 1;
+      delay(750);
     break;
   }
 
@@ -479,6 +483,79 @@ void set_alarm(){
   alarm_status = true;
 }
 
+// Manually set time using the Modulino Knob
+void set_date(){
+
+  int current_hour = currentTime.getHour();
+  int current_minutes = currentTime.getMinutes();
+  DayOfWeek day_of_week = currentTime.getDayOfWeek();
+
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  show_date_and_month();
+
+  // Day of the month
+  while(click == 0)
+  {
+    if (direction == 1 && day_of_month_index < 31){
+      buzzer.tone(494, duration);
+      day_of_month_index++;
+      currentTime = RTCTime(day_of_month_index, Month::JANUARY, 2026, current_hour, current_minutes, 00, day_of_week, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      show_date_and_month();
+    }
+    else if(direction == -1 && day_of_month_index > 0){
+      buzzer.tone(330, duration);
+      day_of_month_index--;
+      currentTime = RTCTime(day_of_month_index, Month::JANUARY, 2026, current_hour, current_minutes, 00, day_of_week, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      show_date_and_month();
+    }
+
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.print("Day of the month Set: ");
+  Serial.println(currentTime);
+
+  buzzer.tone(frequency, duration);
+  delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
+
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  int month_index = 0;
+  show_date_and_month();
+  while(click == 0)
+  {
+    if (direction == 1 && month_index < 12){
+      buzzer.tone(494, duration);
+      month_index++;
+      currentTime = RTCTime(day_of_month_index, months_of_year[month_index], 2026, current_hour, current_minutes, 00, day_of_week, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      show_date_and_month();
+    }
+    else if(direction == -1 && month_index > 0){
+      buzzer.tone(330, duration);
+      month_index--;
+      currentTime = RTCTime(day_of_month_index, months_of_year[month_index], 2026, current_hour, current_minutes, 00, day_of_week, SaveLight::SAVING_TIME_ACTIVE);
+      RTC.setTime(currentTime);
+      show_date_and_month();
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.println("Month Set: ");
+  Serial.print(currentTime);
+  buzzer.tone(frequency, duration);
+}
+
+
 //---------------------- MATRIX FRAMES FUNCTIONS -----------------//
 
 // Shows on the R4 Integrated Matrix the Date of the Day
@@ -637,8 +714,6 @@ bool connectToWiFi(){
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
-    // don't continue
-    // while (true); // FIXME, clock should continue without internet
     return false;
   }
 
