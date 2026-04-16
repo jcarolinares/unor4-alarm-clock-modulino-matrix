@@ -429,21 +429,24 @@ void set_alarm(){
   click = knob.isPressed();
   direction = knob.getDirection();
 
+  int alarm_hours = 0;
+  int alarm_minutes = 0;
+
   // Hours tens
   while(click == 0)
   {
     integrated_matrix.loadFrame(icon_ALARM_SET);
     // Serial.println(hours);
-    if (direction == 1 && hours < 24){
+    if (direction == 1 && alarm_hours < 24){
       buzzer.tone(494, duration);
-      hours++;
-      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      alarm_hours++;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, alarm_hours, alarm_minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
-    else if(direction == -1 && hours > 0){
+    else if(direction == -1 && alarm_hours > 0){
       buzzer.tone(330, duration);
-      hours--;
-      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      alarm_hours--;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, alarm_hours, alarm_minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
 
@@ -452,7 +455,7 @@ void set_alarm(){
     direction = knob.getDirection();
   }
 
-  Serial.println("Hours Set");
+  Serial.println("Alarm Hours Set");
   buzzer.tone(frequency, duration);
   delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
 
@@ -463,17 +466,17 @@ void set_alarm(){
   while(click == 0)
   {
     integrated_matrix.loadFrame(icon_ALARM_SET);
-    // Serial.println(minutes);
-    if (direction == 1 && minutes < 60){
+    // Serial.println(alarm_minutes);
+    if (direction == 1 && alarm_minutes < 60){
       buzzer.tone(494, duration);
-      minutes++;
-      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      alarm_minutes++;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, alarm_hours, alarm_minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
-    else if(direction == -1 && minutes > 0){
+    else if(direction == -1 && alarm_minutes > 0){
       buzzer.tone(330, duration);
-      minutes--;
-      alarmTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
+      alarm_minutes--;
+      alarmTime = RTCTime(7, Month::APRIL, 2026, alarm_hours, alarm_minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE); // Day, month and Day of the week are not used for the Alarm mode so definition is generic
       matrix_show_alarm_time();
     }
 
@@ -482,12 +485,12 @@ void set_alarm(){
     direction = knob.getDirection();
   }
 
-  Serial.println("Minutes Set");
+  Serial.println("Alarm Minutes Set");
   buzzer.tone(frequency, duration);
   alarm_status = true;
 }
 
-// Manually set time using the Modulino Knob
+// Manually set Day and Month using the Modulino Knob
 void set_date(){
 
   int current_hour = currentTime.getHour();
