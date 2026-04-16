@@ -311,6 +311,10 @@ void set_time(){
   matrix_1.setFrame(SEG_NUM_0);
   matrix_0.setFrame(SEG_NUM_0);
 
+  DayOfWeek current_day_of_week = currentTime.getDayOfWeek();
+  Month current_month = currentTime.getMonth();
+  int day_of_month = currentTime.getDayOfMonth();
+
   position = knob.get();
   click = knob.isPressed();
   direction = knob.getDirection();
@@ -323,14 +327,14 @@ void set_time(){
     if (direction == 1 && hours < 24){
       buzzer.tone(494, duration);
       hours++;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, current_day_of_week, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
     else if(direction == -1 && hours > 0){
       buzzer.tone(330, duration);
       hours--;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, current_day_of_week, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
@@ -356,14 +360,14 @@ void set_time(){
     if (direction == 1 && minutes < 60){
       buzzer.tone(494, duration);
       minutes++;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, current_day_of_week, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
     else if(direction == -1 && minutes > 0){
       buzzer.tone(330, duration);
       minutes--;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, current_day_of_week, SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       matrix_show_time();
     }
@@ -392,14 +396,14 @@ void set_time(){
     if (direction == 1 && day_of_week_index < 6){
       buzzer.tone(494, duration);
       day_of_week_index++;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       integrated_matrix_date();
     }
     else if(direction == -1 && day_of_week_index > 0){
       buzzer.tone(330, duration);
       day_of_week_index--;
-      currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
+      currentTime = RTCTime(day_of_month, current_month, 2026, hours, minutes, 00, day_of_week[day_of_week_index], SaveLight::SAVING_TIME_ACTIVE);
       RTC.setTime(currentTime);
       integrated_matrix_date();
     }
