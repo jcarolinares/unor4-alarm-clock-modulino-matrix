@@ -777,7 +777,7 @@ bool connectToWiFi(){
 
   int attempts_counter = 0; // To store total number of connection attemps before connection timeout
   // attempt to connect to WiFi network:
-  while (wifiStatus != WL_CONNECTED) { //TODO add here a 1 minute timeout
+  while (wifiStatus != WL_CONNECTED) {
     attempts_counter++;
     
     if(attempts_counter >1){ // 20 seconds timeout
