@@ -1,7 +1,7 @@
 /*
  Arduino matrix_0 LED Nixie Clock
 
- A Nixie clock made with four Modulinos LED matrix_0
+ A Nixie clock made with four Modulinos LED matrix
 
  Made by Julián Caro Linares for Arduino INC
 
@@ -12,8 +12,9 @@
 #include "ArduinoGraphics.h"
 #include "Modulino_LED_Matrix.h"
 #include "matrix_collection.h"
+#include "alarm_ring_tones.h" // Optional melodies for your clock alarm
 #include "RTC.h"
-#include "Arduino_LED_Matrix.h" // Library for the Integrated Matrix of the UNO R4/UNOQ
+#include "Arduino_LED_Matrix.h" // Library for the Integrated Matrix of the UNO R4/UNO Q
 
 // RTC and NTP Synch libraries
 #include "RTC.h"
@@ -24,12 +25,10 @@
 #include <WiFiUdp.h>
 #include "arduino_secrets.h" 
 
-// NTP Settings
-// Offset is in seconds: e.g., UTC+1 = 3600, UTC-5 = -18000
+// Wifi and NTP Objects
 int wifiStatus = WL_IDLE_STATUS;
 WiFiUDP Udp; // A UDP instance to let us send and receive packets over UDP
 NTPClient timeClient(Udp);
-
 
 // Modulino Matrix Objects
 ModulinoLEDMatrix matrix_0;
@@ -70,7 +69,7 @@ RTCTime alarmTime(day_of_month_index, Month::JANUARY, 2026, 15, 46, 00, DayOfWee
 bool alarm_status = false;
 
 // Millis Variables
-const long interval_time = 10000;
+const long interval_time = 10000; // Change this to increase or decrease how often the clock gets checked and updated 
 unsigned long previousMillis = 0;
 unsigned long currentMillis = millis();
 
@@ -79,7 +78,7 @@ int state = 1;
 int menu_option = 0;
 
 // Date Show Up Variables
-int show_date_ite = 0; // When the date shows up after a number of time iterations
+int show_date_ite = 0; // To control when the date shows up after a number of time iterations based on the variable interval_time
 
 
 void setup() {
@@ -87,7 +86,7 @@ void setup() {
   Serial.begin(115200);
   RTC.begin();
 
-  // Modulinos Begin
+  // Modulinos Init Setup
   Modulino.begin();
   knob.begin();
   buzzer.begin();
@@ -101,15 +100,12 @@ void setup() {
   // Integrated Matrix Init Setup
   integrated_matrix.begin();
 
-  getInternetTime();
-
-  // // Time and Date Init Setup
-  // // currentTime = RTCTime(7, Month::APRIL, 2026, hours, minutes, 00, DayOfWeek::TUESDAY, SaveLight::SAVING_TIME_ACTIVE); // Debugging Manual Overiding
-  // RTC.setTime(currentTime);
+  getInternetTime(); // If there is not internet, the clock will change to manual set of the time after some timeout
   
   // Initial Matrixes frames
   matrix_show_time();
   integrated_matrix_date();
+
 }
 
 void loop() {
@@ -154,7 +150,7 @@ void loop() {
     
     case 0: // Menu mode
 
-      // Matrixes Animation
+      // Matrixes Frames
       matrix_3.setFrame(MENU_M);
       matrix_2.setFrame(MENU_E);
       matrix_1.setFrame(MENU_N);
@@ -241,12 +237,12 @@ void loop() {
       delay(750); // To avoid to enter into the menu because of the previous knob click
     break;
 
-    case 4: // NTP Time Synch
+    case 4: // Synch with the Internet time and Date
       getInternetTime();
       state = 1;
     break;
     
-    case 5: // Date and Month Mode
+    case 5: // Date and Month Mode Show
 
       currentMillis = millis();
       if (currentMillis - previousMillis >= interval_time){
@@ -259,10 +255,14 @@ void loop() {
       } 
     break;
 
-    case 6: // Date and Month Setup
+    case 6: // Date and Month Manual Setup
       set_date();
       state = 1;
       delay(750);
+    break;
+
+    case 7: //Play Melody
+      play_alarm_melody();
     break;
   }
 
@@ -286,17 +286,21 @@ void check_alarm(){
     integrated_matrix.loadFrame(icon_ALARM);
   
     while(click == false){
-      buzzer.tone(494, 500);
+      // buzzer.tone(494, 500);
       
       integrated_matrix.loadSequence(alarm_animation);
       integrated_matrix.play(true);
       
-      delay(250);
-      buzzer.tone(0, 500);
-      delay(250);
+      // delay(250);
+      // buzzer.tone(0, 500);
+      // delay(250);
       
-      click = knob.isPressed();
+      // click = knob.isPressed();
+
+      play_alarm_melody();
     }
+
+
     integrated_matrix.play(false);
     alarm_status = false;
     integrated_matrix_date();
@@ -391,8 +395,6 @@ void set_time(){
   integrated_matrix_date();
   while(click == 0)
   {
-    // integrated_matrix.loadFrame(icon_MIN);
-    // Serial.println(minutes);
     if (direction == 1 && day_of_week_index < 6){
       buzzer.tone(494, duration);
       day_of_week_index++;
@@ -436,7 +438,6 @@ void set_alarm(){
   while(click == 0)
   {
     integrated_matrix.loadFrame(icon_ALARM_SET);
-    // Serial.println(hours);
     if (direction == 1 && alarm_hours < 24){
       buzzer.tone(494, duration);
       alarm_hours++;
@@ -466,7 +467,6 @@ void set_alarm(){
   while(click == 0)
   {
     integrated_matrix.loadFrame(icon_ALARM_SET);
-    // Serial.println(alarm_minutes);
     if (direction == 1 && alarm_minutes < 60){
       buzzer.tone(494, duration);
       alarm_minutes++;
@@ -761,7 +761,7 @@ void getInternetTime(){
     timeClient.update();
 
     // RTC, NTP and Timezone Init Setup
-    auto timeZoneOffsetHours = 2; // Time zone offset
+    auto timeZoneOffsetHours = 2; // Time zone offset in hours - Change this to adjust the official UTC time to your local timezone
     auto unixTime = timeClient.getEpochTime() + (timeZoneOffsetHours * 3600);
     Serial.print("Unix time = ");
     Serial.println(unixTime);
@@ -778,6 +778,65 @@ void getInternetTime(){
     state = 2;
   }
 }
+
+// Alarm Melodies
+
+int play_alarm_melody()
+{
+
+  click = knob.isPressed();
+  
+  int* melody;
+  int notes;
+  
+  melody = tetris_melody;
+  notes = sizeof(tetris_melody) / sizeof(tetris_melody[0]);
+  int tempo = 88; // FIXME Tempo varies from song to song
+
+  // sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
+  // there are two values per note (pitch and duration), so for each note there are four bytes
+  // int notes=sizeof(zelda_theme_melody)/sizeof(zelda_theme_melody[0])/2; 
+
+  // This calculates the duration of a whole note in ms (60s/tempo)*4 beats
+  int wholenote = (60000 * 4) / tempo;
+
+  int divider = 0, noteDuration = 0;
+
+
+  // iterate over the notes of the melody. 
+  // Remember, the array is twice the number of notes (notes + durations)
+  for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
+    
+    // Modulino knob control
+    click = knob.isPressed();
+    if (click == true){
+      return 0; // We stop the function and the melody
+    }
+    // calculates the duration of each note
+    divider = melody[thisNote + 1];
+    if (divider > 0) {
+      // regular note, just proceed
+      noteDuration = (wholenote) / divider;
+    } else if (divider < 0) {
+      // dotted notes are represented with negative durations!!
+      noteDuration = (wholenote) / abs(divider);
+      noteDuration *= 1.5; // increases the duration in half for dotted notes
+    }
+
+    // we only play the note for 90% of the duration, leaving 10% as a pause
+    // tone(buzzer, melody[thisNote], noteDuration*0.9);
+    buzzer.tone(melody[thisNote], noteDuration*0.9);
+
+    // Wait for the specief duration before playing the next note.
+    delay(noteDuration);
+    
+    // stop the waveform generation before the next note.
+    // noTone(buzzer);
+    buzzer.tone(0, 5); // 5 ms to not have lots of delay
+  }  
+}
+
+
 
 //---------------------- DEBUGGING FUNCTIONS -----------------//
 
