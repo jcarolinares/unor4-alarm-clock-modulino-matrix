@@ -115,6 +115,30 @@ constexpr uint32_t icon_MENU_DATE[] = {
   0x343fc000
 };
 
+constexpr uint32_t icon_MELODY_ON[] = {
+  0x00038124,
+  0x22847287,
+  0x10000000
+};
+
+constexpr uint32_t icon_MELODY_OFF[] = {
+  0x00039124,
+  0xa2847257,
+  0x11000000
+};
+
+constexpr uint32_t icon_MENU_MUSIC[] = {
+  0x00003802,
+  0x40280200,
+  0xe00e0000
+};
+
+constexpr uint32_t icon_BUZZER[] = {
+  0x00208a1a,
+  0xa3aa3aa1,
+  0xaa08a002
+};
+
 // Month frames
 constexpr uint32_t frame_JAN[] = { 0x00032515, 0x71775552, 0x55000000 };
 constexpr uint32_t frame_FEB[] = { 0x00077644, 0x56664454, 0x76000000 };

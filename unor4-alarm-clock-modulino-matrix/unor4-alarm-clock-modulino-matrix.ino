@@ -67,6 +67,7 @@ RTCTime currentTime(day_of_month_index, Month::JANUARY, 2026, 0, 0, 00, DayOfWee
 // Alarm time & Variables
 RTCTime alarmTime(day_of_month_index, Month::JANUARY, 2026, 15, 46, 00, DayOfWeek::MONDAY, SaveLight::SAVING_TIME_ACTIVE);
 bool alarm_status = false;
+bool alarm_melody_mode = false;
 
 // Millis Variables
 const long interval_time = 10000; // Change this to increase or decrease how often the clock gets checked and updated 
@@ -105,7 +106,6 @@ void setup() {
   // Initial Matrixes frames
   matrix_show_time();
   integrated_matrix_date();
-
 }
 
 void loop() {
@@ -285,25 +285,35 @@ void check_alarm(){
     click = knob.isPressed();
     integrated_matrix.loadFrame(icon_ALARM);
   
-    while(click == false){
-      // buzzer.tone(494, 500);
-      
-      integrated_matrix.loadSequence(alarm_animation);
-      integrated_matrix.play(true);
-      
-      // delay(250);
-      // buzzer.tone(0, 500);
-      // delay(250);
-      
-      // click = knob.isPressed();
-
-      play_alarm_melody();
+    if (alarm_melody_mode == false){
+      while(click == false){
+        buzzer.tone(494, 500);
+        
+        integrated_matrix.loadSequence(alarm_animation);
+        integrated_matrix.play(true);
+  
+        delay(250);
+        buzzer.tone(0, 500);
+        delay(250);
+  
+        click = knob.isPressed();
+      }     
     }
-
+    else if(alarm_melody_mode == true){
+      while(click == false){
+        buzzer.tone(494, 500);
+        
+        integrated_matrix.loadSequence(alarm_animation);
+        integrated_matrix.play(true);
+        
+        play_alarm_melody();
+      }
+    }
 
     integrated_matrix.play(false);
     alarm_status = false;
     integrated_matrix_date();
+    delay(750);
   }
 }
 
@@ -487,6 +497,42 @@ void set_alarm(){
 
   Serial.println("Alarm Minutes Set");
   buzzer.tone(frequency, duration);
+  delay(500); // Delay to avoid the detection of the previous click of the Modulino Knob
+
+  // Melody Alarm or not selection
+  position = knob.get();
+  click = knob.isPressed();
+  direction = knob.getDirection();
+
+  if (alarm_melody_mode == true){
+    integrated_matrix.loadFrame(icon_MENU_MUSIC); // Alarm Melody Mode variables is OFF by default therefore we show icon_BUZZER
+  }
+  else{
+    integrated_matrix.loadFrame(icon_BUZZER); // Alarm Melody Mode variables is OFF by default therefore we show icon_BUZZER
+  }
+
+  while(click == 0)
+  {
+    if (direction == 1){
+      integrated_matrix.loadFrame(icon_MENU_MUSIC);
+      buzzer.tone(494, duration);
+      alarm_melody_mode = true;
+    }
+    else if(direction == -1 && alarm_minutes > 0){
+      integrated_matrix.loadFrame(icon_BUZZER);
+      buzzer.tone(330, duration);
+      alarm_melody_mode = false;
+    }
+
+    position = knob.get();
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+
+  Serial.print("Alarm Melody Mode Set: ");
+  Serial.println(alarm_melody_mode);
+  buzzer.tone(frequency, duration);
+
   alarm_status = true;
 }
 
@@ -789,13 +835,9 @@ int play_alarm_melody()
   int* melody;
   int notes;
   
-  melody = tetris_melody;
-  notes = sizeof(tetris_melody) / sizeof(tetris_melody[0]);
-  int tempo = 88; // FIXME Tempo varies from song to song
-
-  // sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
-  // there are two values per note (pitch and duration), so for each note there are four bytes
-  // int notes=sizeof(zelda_theme_melody)/sizeof(zelda_theme_melody[0])/2; 
+  melody = mario_melody;
+  notes = sizeof(mario_melody) / sizeof(mario_melody[0]);
+  int tempo = 200; // FIXME Tempo varies from song to song
 
   // This calculates the duration of a whole note in ms (60s/tempo)*4 beats
   int wholenote = (60000 * 4) / tempo;
@@ -805,14 +847,14 @@ int play_alarm_melody()
 
   // iterate over the notes of the melody. 
   // Remember, the array is twice the number of notes (notes + durations)
-  for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2) {
+  for (int thisNote = 0; thisNote < notes; thisNote = thisNote + 2) {
     
     // Modulino knob control
     click = knob.isPressed();
     if (click == true){
       return 0; // We stop the function and the melody
     }
-    // calculates the duration of each note
+    // Calculates the duration of each note
     divider = melody[thisNote + 1];
     if (divider > 0) {
       // regular note, just proceed
@@ -823,15 +865,13 @@ int play_alarm_melody()
       noteDuration *= 1.5; // increases the duration in half for dotted notes
     }
 
-    // we only play the note for 90% of the duration, leaving 10% as a pause
-    // tone(buzzer, melody[thisNote], noteDuration*0.9);
+    // We only play the note for 90% of the duration, leaving 10% as a pause
     buzzer.tone(melody[thisNote], noteDuration*0.9);
 
     // Wait for the specief duration before playing the next note.
     delay(noteDuration);
     
-    // stop the waveform generation before the next note.
-    // noTone(buzzer);
+    // Stop the waveform generation before the next note.
     buzzer.tone(0, 5); // 5 ms to not have lots of delay
   }  
 }
