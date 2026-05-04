@@ -504,6 +504,7 @@ void set_alarm(){
   click = knob.isPressed();
   direction = knob.getDirection();
 
+  alarm_melody_mode = false; // To start always in BUZZER Alarm Mode
   if (alarm_melody_mode == true){
     integrated_matrix.loadFrame(icon_MENU_MUSIC); // Alarm Melody Mode variables is OFF by default therefore we show icon_BUZZER
   }
