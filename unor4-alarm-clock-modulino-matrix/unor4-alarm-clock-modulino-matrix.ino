@@ -261,8 +261,12 @@ void loop() {
       delay(750);
     break;
 
-    case 7: //Play Melody
+    case 7: // Play Melody
       play_alarm_melody();
+    break;
+
+    case 8: // Timer Melody
+      set_timer();
     break;
   }
 
@@ -609,6 +613,27 @@ void set_date(){
   buzzer.tone(frequency, duration);
 }
 
+void set_timer(){
+  long int total_time = 30000;
+  long int left_time = total_time;
+
+  while(left_time<=0){
+    
+    // int hour_tens = total_time / 1000;
+    int hour_units = total_time % 100;
+    int minutes_tens = currentTime.getMinutes() / 10;
+    int minutes_units = currentTime.getMinutes() % 10;
+
+    // Call the helpers to set the correct frame on each matrix
+    setSegmentFrame(matrix_3, hour_tens);
+    setColonFrame(matrix_2, hour_units); // Units of hours is special it includes a colon on the frames
+    setSegmentFrame(matrix_1, minutes_tens);
+    setSegmentFrame(matrix_0, minutes_units);
+
+
+    left_time=left_time-1000;
+  }
+}
 
 //---------------------- MATRIX FRAMES FUNCTIONS -----------------//
 
