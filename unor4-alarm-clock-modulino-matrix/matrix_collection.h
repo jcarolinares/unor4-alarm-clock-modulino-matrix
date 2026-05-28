@@ -139,6 +139,12 @@ constexpr uint32_t icon_BUZZER[] = {
   0xaa08a002
 };
 
+constexpr uint32_t icon_MENU_BUSY[] = {
+  0x0f010820,
+  0x44f24f22,
+  0x041080f0
+};
+
 // Month frames
 constexpr uint32_t frame_JAN[] = { 0x00032515, 0x71775552, 0x55000000 };
 constexpr uint32_t frame_FEB[] = { 0x00077644, 0x56664454, 0x76000000 };
@@ -288,3 +294,12 @@ constexpr uint32_t MENU_N[3] = { 0xC3E3E3F3, 0xF3DBDBCF, 0xCFC7C7C3 };
 constexpr uint32_t MENU_U[3] = { 0xC3C3C3C3, 0xC3C3C3C3, 0xC3C3FFFF };
 constexpr uint32_t MENU_t_lower[3] = { 0x18181818, 0x7E7E1818, 0x18181E1E };
 constexpr uint32_t MENU_h_lower[3] = { 0x60606060, 0x7E7E6666, 0x66666666 };
+constexpr uint32_t LETTER_F[3] = { 0xFFFFC0C0, 0xC0FCFCC0, 0xC0C0C0C0 };
+constexpr uint32_t LETTER_R[3] = { 0xFEFEC3C3, 0xC3FCFCCC, 0xC6C6C3C3 };
+constexpr uint32_t LETTER_E[3] = { 0xFFFFC0C0, 0xC0FCFCC0, 0xC0C0FFFF };
+constexpr uint32_t LETTER_B[3] = { 0xFEFEC3C3, 0xC3FCFCC3, 0xC3C3FEFE };
+constexpr uint32_t LETTER_U[3] = { 0xC3C3C3C3, 0xC3C3C3C3, 0xC3C3FFFF };
+constexpr uint32_t LETTER_S[3] = { 0xFFFFC0C0, 0xC0FFFF03, 0x0303FFFF };
+constexpr uint32_t LETTER_Y[3] = { 0xC3C3C3C3, 0x663C1818, 0x18181818 };
+
+

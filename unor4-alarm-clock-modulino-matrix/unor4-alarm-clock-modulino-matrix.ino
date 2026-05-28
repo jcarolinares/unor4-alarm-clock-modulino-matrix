@@ -75,12 +75,14 @@ unsigned long previousMillis = 0;
 unsigned long currentMillis = millis();
 
 // State Machines Variables
-int state = 1;
+int state = 1; // State 1 is default Clock mode
 int menu_option = 0;
 
 // Date Show Up Variables
 int show_date_ite = 0; // To control when the date shows up after a number of time iterations based on the variable interval_time
 
+// Busy mode
+bool busy_mode = false; // False means FREE, True means BUSY
 
 void setup() {
 
@@ -165,7 +167,7 @@ void loop() {
         click = knob.isPressed();
         direction = knob.getDirection();
 
-        if(direction == 1 && menu_option < 4){
+        if(direction == 1 && menu_option < 5){
           buzzer.tone(494, duration);
           menu_option++;
         }
@@ -192,6 +194,10 @@ void loop() {
             state = 6;
             break;               
           case 4:
+            integrated_matrix.loadFrame(icon_MENU_BUSY);
+            state = 9;
+            break;
+          case 5:
             integrated_matrix.loadFrame(icon_MENU_EXIT);
             state = 1;
             break;
@@ -265,8 +271,12 @@ void loop() {
       play_alarm_melody();
     break;
 
-    case 8: // Timer Melody
+    case 8: // Timer Mode
       set_timer();
+    break;
+
+    case 9: // FREE or BUSY Mode
+      set_busy_mode();
     break;
   }
 
@@ -613,13 +623,13 @@ void set_date(){
   buzzer.tone(frequency, duration);
 }
 
-void set_timer(){
+void set_timer(){ // TODO all
   long int total_time = 30000;
   long int left_time = total_time;
 
   while(left_time<=0){
     
-    // int hour_tens = total_time / 1000;
+    int hour_tens = total_time / 1000;
     int hour_units = total_time % 100;
     int minutes_tens = currentTime.getMinutes() / 10;
     int minutes_units = currentTime.getMinutes() % 10;
@@ -634,6 +644,46 @@ void set_timer(){
     left_time=left_time-1000;
   }
 }
+
+void set_busy_mode(){
+
+  // BUSY or Free mode
+  click = knob.isPressed();
+  direction = knob.getDirection();
+  // integrated_matrix.loadFrame(icon_MENU_BUSY);
+
+  // We show BUSY as first option
+    busy_mode = true;
+    matrix_3.setFrame(LETTER_B);
+    matrix_2.setFrame(LETTER_U);
+    matrix_1.setFrame(LETTER_S);
+    matrix_0.setFrame(LETTER_Y);
+
+  while(click == 0)
+  {
+    if(direction == 1){
+      busy_mode = false;
+      buzzer.tone(330, duration);
+      matrix_3.setFrame(LETTER_F);
+      matrix_2.setFrame(LETTER_R);
+      matrix_1.setFrame(LETTER_E);
+      matrix_0.setFrame(LETTER_E);
+    }
+    else if (direction == -1){ // BUSY MODE
+      busy_mode = true;
+      buzzer.tone(494, duration);
+      matrix_3.setFrame(LETTER_B);
+      matrix_2.setFrame(LETTER_U);
+      matrix_1.setFrame(LETTER_S);
+      matrix_0.setFrame(LETTER_Y);
+    }
+
+    click = knob.isPressed();
+    direction = knob.getDirection();
+  }
+}
+
+
 
 //---------------------- MATRIX FRAMES FUNCTIONS -----------------//
 
