@@ -194,7 +194,7 @@ void loop() {
             state = 6;
             break;               
           case 4:
-            integrated_matrix.loadFrame(icon_MENU_BUSY);
+            integrated_matrix.loadFrame(icon_MENU_BUSY_TEXT);
             state = 9;
             break;
           case 5:
@@ -277,6 +277,7 @@ void loop() {
 
     case 9: // FREE or BUSY Mode
       set_busy_mode();
+      delay(750);
     break;
   }
 
@@ -668,6 +669,7 @@ void set_busy_mode(){
       matrix_2.setFrame(LETTER_R);
       matrix_1.setFrame(LETTER_E);
       matrix_0.setFrame(LETTER_E);
+      integrated_matrix.loadFrame(icon_MENU_FREE_TEXT);
     }
     else if (direction == -1){ // BUSY MODE
       busy_mode = true;
@@ -676,6 +678,7 @@ void set_busy_mode(){
       matrix_2.setFrame(LETTER_U);
       matrix_1.setFrame(LETTER_S);
       matrix_0.setFrame(LETTER_Y);
+      integrated_matrix.loadFrame(icon_MENU_BUSY_TEXT);
     }
 
     click = knob.isPressed();

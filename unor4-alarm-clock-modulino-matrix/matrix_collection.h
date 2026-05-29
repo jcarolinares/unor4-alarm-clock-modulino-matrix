@@ -145,6 +145,18 @@ constexpr uint32_t icon_MENU_BUSY[] = {
   0x041080f0
 };
 
+constexpr uint32_t icon_MENU_BUSY_TEXT[] = {
+  0x000000d5,
+  0xdb65d5ab,
+  0x4adf2000
+};
+
+constexpr uint32_t icon_MENU_FREE_TEXT[] = {
+  0x000000fb,
+  0xf964db69,
+  0x6497f000
+};
+
 // Month frames
 constexpr uint32_t frame_JAN[] = { 0x00032515, 0x71775552, 0x55000000 };
 constexpr uint32_t frame_FEB[] = { 0x00077644, 0x56664454, 0x76000000 };
